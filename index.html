@@ -1,0 +1,1622 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Praxis Umsatz</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+:root {
+  --bg: #F4F1EA;
+  --surface: #FBF9F4;
+  --surface-2: #EDE8DA;
+  --ink: #1C1B17;
+  --gray: #6B6760;
+  --gray-light: #A39D90;
+  --line: #E0DAC9;
+  --accent: #A24E2B;
+  --accent-soft: #F2D9C9;
+  --good: #4A6B3F;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+html, body {
+  font-family: 'Geist', -apple-system, BlinkMacSystemFont, sans-serif;
+  background: var(--bg); color: var(--ink);
+  font-size: 16px; line-height: 1.5;
+  overscroll-behavior-y: contain;
+  -webkit-font-smoothing: antialiased;
+}
+body { padding-bottom: 88px; min-height: 100vh; }
+button { font-family: inherit; }
+input, textarea, select { font-family: inherit; color: var(--ink); }
+.serif { font-family: 'Fraunces', Georgia, serif; font-optical-sizing: auto; }
+.mono { font-family: 'Geist Mono', ui-monospace, monospace; font-variant-numeric: tabular-nums; }
+
+header {
+  padding: 22px 20px 16px;
+  border-bottom: 1px solid var(--line);
+  position: sticky; top: 0; background: var(--bg); z-index: 10;
+  backdrop-filter: blur(6px);
+}
+header h1 {
+  font-family: 'Fraunces', serif; font-weight: 500;
+  font-size: 28px; letter-spacing: -0.02em;
+}
+header .sub { font-size: 13px; color: var(--gray); margin-top: 1px; letter-spacing: 0.01em; }
+
+.screen { display: none; padding: 20px; animation: fade .25s ease; }
+.screen.active { display: block; }
+@keyframes fade { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+
+.field { margin-bottom: 18px; }
+.label {
+  font-size: 11px; text-transform: uppercase; letter-spacing: 0.1em;
+  color: var(--gray); margin-bottom: 8px; font-weight: 500;
+}
+input[type="text"], input[type="number"], input[type="date"], input[type="datetime-local"], input[type="search"], textarea {
+  width: 100%; padding: 14px 16px;
+  border: 1px solid var(--line);
+  background: var(--surface); border-radius: 12px;
+  font-size: 16px; color: var(--ink);
+  transition: border-color 0.15s, background 0.15s;
+}
+input:focus, textarea:focus { outline: none; border-color: var(--accent); background: white; }
+
+.insurance-tabs {
+  display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 6px;
+  background: var(--surface-2); padding: 4px; border-radius: 12px;
+}
+.insurance-tab {
+  padding: 11px 6px; border: none; background: transparent;
+  border-radius: 8px; font-size: 12.5px; cursor: pointer;
+  color: var(--gray); font-weight: 500;
+  transition: background 0.15s, color 0.15s;
+}
+.insurance-tab.active { background: var(--ink); color: var(--bg); }
+
+.btn {
+  padding: 14px 20px; border-radius: 12px; border: none;
+  font-size: 15px; font-weight: 500; cursor: pointer;
+  transition: opacity 0.15s, transform 0.05s;
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+}
+.btn:active { opacity: 0.8; transform: scale(0.99); }
+.btn-primary { background: var(--ink); color: var(--bg); }
+.btn-secondary { background: var(--surface); color: var(--ink); border: 1px solid var(--line); }
+.btn-danger { background: transparent; color: var(--accent); border: 1px solid var(--accent); }
+.btn-block { width: 100%; }
+
+.multiplier-buttons {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 12px;
+}
+.mult-btn {
+  padding: 16px 14px; border-radius: 14px; border: 1px solid var(--line);
+  background: var(--surface); cursor: pointer; text-align: left;
+  transition: all 0.15s;
+}
+.mult-btn:active { background: var(--accent-soft); border-color: var(--accent); transform: scale(0.99); }
+.mult-btn .ml-label {
+  font-size: 11px; text-transform: uppercase;
+  color: var(--gray); letter-spacing: 0.08em; font-weight: 500;
+}
+.mult-btn .ml-val {
+  font-size: 22px; font-family: 'Geist Mono', monospace;
+  margin-top: 6px; font-weight: 500; letter-spacing: -0.01em;
+}
+.mult-btn .ml-total {
+  font-size: 13px; color: var(--accent); margin-top: 4px;
+  font-family: 'Geist Mono', monospace; font-weight: 500;
+}
+
+.tariff-detail {
+  margin-top: 10px; font-size: 13px; color: var(--gray);
+  padding: 12px 14px; background: var(--surface); border: 1px dashed var(--line);
+  border-radius: 10px;
+}
+.tariff-detail .desc { color: var(--ink); font-weight: 500; }
+.tariff-detail.warn { border-style: solid; border-color: var(--line); color: var(--gray); }
+
+.tariff-suggest {
+  background: var(--surface); border: 1px solid var(--line);
+  border-radius: 12px; margin-top: 4px; max-height: 280px; overflow-y: auto;
+  display: none; box-shadow: 0 8px 24px rgba(28,27,23,0.06);
+}
+.tariff-suggest.show { display: block; }
+.tariff-suggest-item { padding: 12px 14px; border-bottom: 1px solid var(--line); cursor: pointer; }
+.tariff-suggest-item:last-child { border-bottom: none; }
+.tariff-suggest-item:active { background: var(--accent-soft); }
+.tariff-suggest-item .ts-num { font-family: 'Geist Mono', monospace; font-weight: 500; font-size: 14px; }
+.tariff-suggest-item .ts-desc { font-size: 12px; color: var(--gray); margin-top: 2px; line-height: 1.35; }
+.tariff-suggest-item .ts-prices { font-size: 11.5px; color: var(--accent); margin-top: 3px; font-family: 'Geist Mono', monospace; }
+
+.stat {
+  background: var(--surface); border: 1px solid var(--line);
+  border-radius: 16px; padding: 20px; margin-bottom: 10px;
+}
+.stat .label-sm {
+  font-size: 11px; text-transform: uppercase;
+  color: var(--gray); letter-spacing: 0.1em; font-weight: 500;
+}
+.stat .amount {
+  font-family: 'Fraunces', serif; font-weight: 500; font-size: 38px;
+  letter-spacing: -0.025em; margin-top: 6px;
+  font-variant-numeric: tabular-nums;
+}
+.stat .meta { font-size: 12.5px; color: var(--gray); margin-top: 2px; }
+.stat.accent { background: var(--ink); border-color: var(--ink); color: var(--bg); }
+.stat.accent .label-sm, .stat.accent .meta { color: var(--gray-light); }
+
+.case-row {
+  display: flex; justify-content: space-between; align-items: flex-start;
+  padding: 14px 14px; background: var(--surface); border: 1px solid var(--line);
+  border-radius: 12px; margin-bottom: 6px; gap: 10px;
+}
+.case-row .left { flex: 1; min-width: 0; }
+.case-row .pid { font-weight: 500; font-size: 14.5px; }
+.case-row .pid .tn { color: var(--gray); font-weight: 400; font-family: 'Geist Mono', monospace; font-size: 13px; }
+.case-row .meta { font-size: 11.5px; color: var(--gray); margin-top: 3px; letter-spacing: 0.01em; }
+.case-row .amt { font-family: 'Geist Mono', monospace; font-weight: 500; white-space: nowrap; }
+.case-row .del-btn {
+  background: none; border: none; color: var(--gray-light);
+  padding: 0 2px; cursor: pointer; font-size: 22px; line-height: 1;
+  margin-left: 4px; align-self: flex-start; margin-top: -2px;
+}
+.case-row .del-btn:active { color: var(--accent); }
+
+.tariff-row {
+  background: var(--surface); border: 1px solid var(--line);
+  border-radius: 12px; padding: 14px; margin-bottom: 6px;
+}
+.tariff-row .head { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; }
+.tariff-row .num { font-weight: 600; font-family: 'Geist Mono', monospace; font-size: 15px; }
+.tariff-row .desc { font-size: 13px; color: var(--gray); margin-top: 3px; line-height: 1.4; }
+.tariff-row .vals {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 10px;
+  margin-top: 12px; padding-top: 10px; border-top: 1px dashed var(--line);
+}
+.val-cell .v-label { color: var(--gray); text-transform: uppercase; font-size: 10px; letter-spacing: 0.08em; font-weight: 500; }
+.val-cell .v-val { font-family: 'Geist Mono', monospace; margin-top: 3px; font-weight: 500; font-size: 14px; }
+.tariff-row .edit-link {
+  background: transparent; border: 1px solid var(--line);
+  padding: 6px 10px; font-size: 12px; border-radius: 8px;
+  color: var(--ink); cursor: pointer;
+}
+
+nav.tabs {
+  position: fixed; bottom: 0; left: 0; right: 0;
+  background: var(--surface); border-top: 1px solid var(--line);
+  display: grid; grid-template-columns: 1fr 1fr 1fr;
+  padding: 8px 0 calc(10px + env(safe-area-inset-bottom));
+  z-index: 20;
+}
+nav.tabs button {
+  background: none; border: none; padding: 6px;
+  display: flex; flex-direction: column; align-items: center; gap: 3px;
+  color: var(--gray-light); cursor: pointer;
+  font-size: 11px; font-weight: 500;
+  transition: color 0.15s;
+}
+nav.tabs button.active { color: var(--ink); }
+nav.tabs svg { width: 22px; height: 22px; }
+
+.modal {
+  display: none; position: fixed; inset: 0;
+  background: rgba(28,27,23,0.45); z-index: 30;
+  align-items: flex-end; justify-content: center;
+}
+.modal.active { display: flex; animation: fadeIn 0.2s; }
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+.modal-card {
+  background: var(--bg); border-radius: 22px 22px 0 0;
+  padding: 24px 20px calc(24px + env(safe-area-inset-bottom));
+  width: 100%; max-height: 92vh; overflow-y: auto;
+  animation: slideUp 0.25s ease;
+}
+@keyframes slideUp { from { transform: translateY(20px); } to { transform: translateY(0); } }
+.modal-card h2 {
+  font-family: 'Fraunces', serif; font-weight: 500; font-size: 22px;
+  margin-bottom: 16px; letter-spacing: -0.015em;
+}
+
+.toast {
+  position: fixed; bottom: 110px; left: 50%; transform: translateX(-50%) translateY(8px);
+  background: var(--ink); color: var(--bg); padding: 12px 20px;
+  border-radius: 999px; font-size: 14px; font-weight: 500;
+  opacity: 0; transition: opacity 0.2s, transform 0.2s;
+  pointer-events: none; z-index: 100;
+  box-shadow: 0 8px 24px rgba(28,27,23,0.2);
+}
+.toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+.empty {
+  text-align: center; padding: 50px 20px; color: var(--gray); font-size: 14px;
+  border: 1px dashed var(--line); border-radius: 14px;
+}
+.empty .em {
+  font-family: 'Fraunces', serif; font-style: italic; font-size: 19px;
+  color: var(--ink); display: block; margin-bottom: 6px; font-weight: 500;
+}
+
+.row { display: flex; gap: 8px; align-items: center; }
+.row > * { flex: 1; }
+.section-title {
+  font-family: 'Fraunces', serif; font-weight: 500; font-size: 19px;
+  margin: 24px 0 12px; letter-spacing: -0.01em;
+}
+.section-title:first-of-type { margin-top: 4px; }
+.divider { height: 1px; background: var(--line); margin: 24px 0; }
+
+.filter-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 10px; }
+
+.rabatt-wrap { position: relative; }
+.rabatt-wrap input { padding-right: 44px; }
+.rabatt-wrap .suffix {
+  position: absolute; right: 16px; top: 50%; transform: translateY(-50%);
+  color: var(--gray); font-size: 15px; pointer-events: none;
+  font-family: 'Geist Mono', monospace;
+}
+
+.brand-mark {
+  width: 6px; height: 6px; border-radius: 50%;
+  background: var(--accent); display: inline-block;
+  margin-right: 8px; vertical-align: middle;
+}
+
+.tariff-count {
+  font-size: 11.5px; color: var(--gray-light); text-align: center;
+  margin: 8px 0 14px; letter-spacing: 0.02em;
+}
+</style>
+</head>
+<body>
+
+<header>
+  <h1 class="serif" id="page-title"><span class="brand-mark"></span>Neuer Fall</h1>
+  <div class="sub" id="page-sub">Patient erfassen</div>
+</header>
+
+<!-- ──────── Screen 1: New Case ──────── -->
+<section class="screen active" id="screen-case">
+  <div class="field">
+    <div class="label">Patienten-ID</div>
+    <input type="text" id="patient-id" placeholder="z.B. P-1024" autocomplete="off" autocapitalize="characters">
+  </div>
+
+  <div class="field">
+    <div class="label">Versicherung</div>
+    <div class="insurance-tabs">
+      <button class="insurance-tab active" data-ins="krankenkasse">Krankenkasse</button>
+      <button class="insurance-tab" data-ins="unfall">Unfallvers.</button>
+      <button class="insurance-tab" data-ins="privat">Privatvers.</button>
+    </div>
+  </div>
+
+  <div class="field">
+    <div class="label">Datum & Zeit</div>
+    <input type="datetime-local" id="case-time">
+  </div>
+
+  <div class="field">
+    <div class="label">Tarif-Nummer</div>
+    <input type="text" id="tariff-input" placeholder="Nummer oder Beschreibung suchen…" autocomplete="off">
+    <div class="tariff-suggest" id="tariff-suggest"></div>
+    <div id="tariff-info"></div>
+  </div>
+
+  <div class="field">
+    <div class="label">Rabatt</div>
+    <div class="rabatt-wrap">
+      <input type="number" id="rabatt" placeholder="0" min="0" max="100" step="0.01" inputmode="decimal" value="0">
+      <span class="suffix">%</span>
+    </div>
+  </div>
+
+  <p style="text-align:center; font-size: 12px; color: var(--gray-light); margin-top: 16px;">
+    Mit Median oder Max speichern.
+  </p>
+</section>
+
+<!-- ──────── Screen 2: Umsatz ──────── -->
+<section class="screen" id="screen-umsatz">
+  <div class="stat accent">
+    <div class="label-sm">Monat (laufend)</div>
+    <div class="amount mono" id="mtd-amount">CHF 0.00</div>
+    <div class="meta" id="mtd-meta">0 Fälle</div>
+  </div>
+  <div class="stat">
+    <div class="label-sm">Jahr (laufend)</div>
+    <div class="amount mono" id="ytd-amount">CHF 0.00</div>
+    <div class="meta" id="ytd-meta">0 Fälle</div>
+  </div>
+
+  <div class="section-title serif">Verlauf & Filter</div>
+
+  <div class="filter-row">
+    <div>
+      <div class="label">Von</div>
+      <input type="date" id="filter-from">
+    </div>
+    <div>
+      <div class="label">Bis</div>
+      <input type="date" id="filter-to">
+    </div>
+  </div>
+  <div class="field">
+    <div class="label">Patienten-ID</div>
+    <input type="text" id="filter-patient" placeholder="Optional filtern…" autocomplete="off">
+  </div>
+
+  <div id="filter-result-wrap" style="display:none">
+    <div class="stat" style="border-color: var(--accent); border-width: 1.5px;">
+      <div class="label-sm">Gefiltert</div>
+      <div class="amount mono" id="filter-amount">CHF 0.00</div>
+      <div class="meta" id="filter-meta">0 Fälle</div>
+    </div>
+    <button class="btn btn-secondary btn-block" id="clear-filters" style="margin-bottom: 16px;">Filter zurücksetzen</button>
+  </div>
+
+  <div id="case-list"></div>
+</section>
+
+<!-- ──────── Screen 3: Settings ──────── -->
+<section class="screen" id="screen-settings">
+  <div class="section-title serif">Tarife (SSO Kurzfassung)</div>
+  <p style="font-size: 12.5px; color: var(--gray); margin-bottom: 14px; line-height: 1.5;">
+    Der vollständige SSO-Tarif (Ausgabe April 2018) ist eingebettet. Du kannst Tarife bearbeiten oder eigene hinzufügen.
+  </p>
+
+  <div class="field">
+    <input type="search" id="tariff-search" placeholder="Tarif suchen (Nummer oder Text)…" autocomplete="off">
+  </div>
+
+  <div class="row" style="margin-bottom: 14px;">
+    <button class="btn btn-secondary" id="add-tariff-btn">+ Eigener Tarif</button>
+    <button class="btn btn-secondary" id="reset-sso-btn">SSO wiederherst.</button>
+  </div>
+
+  <div class="tariff-count" id="tariff-count"></div>
+  <div id="tariff-list"></div>
+
+  <div class="divider"></div>
+
+  <div class="section-title serif">Excel Export</div>
+  <p style="font-size: 12.5px; color: var(--gray); margin-bottom: 14px; line-height: 1.5;">
+    Detaillierter Excel-Bericht mit Fallübersicht und Zusammenfassung. Zeitraum offen lassen für alle Daten.
+  </p>
+  <div class="filter-row">
+    <div>
+      <div class="label">Von</div>
+      <input type="date" id="export-from">
+    </div>
+    <div>
+      <div class="label">Bis</div>
+      <input type="date" id="export-to">
+    </div>
+  </div>
+  <div class="row" style="margin-bottom: 8px;">
+    <button class="btn btn-secondary" data-preset="month">Aktueller Monat</button>
+    <button class="btn btn-secondary" data-preset="year">Aktuelles Jahr</button>
+  </div>
+  <div class="row" style="margin-bottom: 14px;">
+    <button class="btn btn-secondary" data-preset="lastmonth">Letzter Monat</button>
+    <button class="btn btn-secondary" data-preset="all">Alle</button>
+  </div>
+  <button class="btn btn-primary btn-block" id="export-excel-btn">Excel generieren</button>
+
+  <div class="divider"></div>
+
+  <div class="section-title serif">Daten</div>
+  <button class="btn btn-secondary btn-block" id="export-cases-btn" style="margin-bottom: 8px;">Fälle exportieren (CSV)</button>
+  <button class="btn btn-danger btn-block" id="reset-cases-btn">Alle Fälle löschen</button>
+
+  <p style="font-size: 11.5px; color: var(--gray-light); text-align: center; margin-top: 24px; line-height: 1.5;">
+    Daten werden auf Anthropic-Servern gespeichert.<br>Praxis Umsatz · v1.1
+  </p>
+</section>
+
+<!-- Bottom nav -->
+<nav class="tabs">
+  <button data-screen="case" class="active">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+    Neu
+  </button>
+  <button data-screen="umsatz">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 17l6-6 4 4 8-8M14 7h7v7"/></svg>
+    Umsatz
+  </button>
+  <button data-screen="settings">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3 1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8 1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>
+    Einstellungen
+  </button>
+</nav>
+
+<!-- Tariff edit modal -->
+<div class="modal" id="modal-tariff">
+  <div class="modal-card">
+    <h2 id="tariff-modal-title">Neuer Tarif</h2>
+    <div class="field">
+      <div class="label">Tarif-Nummer</div>
+      <input type="text" id="t-number" autocomplete="off">
+    </div>
+    <div class="field">
+      <div class="label">Beschreibung</div>
+      <input type="text" id="t-desc" autocomplete="off">
+    </div>
+    <div class="field">
+      <div class="label">Median (CHF)</div>
+      <input type="number" step="0.01" inputmode="decimal" id="t-median">
+    </div>
+    <div class="field">
+      <div class="label">Max (CHF)</div>
+      <input type="number" step="0.01" inputmode="decimal" id="t-max">
+    </div>
+    <div class="row">
+      <button class="btn btn-secondary" id="t-cancel">Abbrechen</button>
+      <button class="btn btn-primary" id="t-save">Speichern</button>
+    </div>
+    <button class="btn btn-danger btn-block" id="t-delete" style="margin-top: 10px; display: none;">Tarif löschen</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ─────────── SSO Zahnarzttarif Kurzfassung (April 2018) ───────────
+// [number, median CHF, max CHF, description]
+const SSO_TARIFFS = [
+  ['4.0030',34.9,40.1,'Kurzbefundaufnahme bei DH/PA-Behandlung'],
+  ['4.0040',146.4,168.4,'Befundaufnahme nachts'],
+  ['4.0050',122,140.3,'Befundaufnahme Sonn- und Feiertage'],
+  ['4.0060',80.2,92.2,'Triage in der Schule'],
+  ['4.0070',90.6,104.2,'Triage in der Praxis'],
+  ['4.0090',48.8,56.1,'Befundaufnahme beim Schüler'],
+  ['4.0100',33.1,38.1,'Kurzbefundaufnahme beim Schüler'],
+  ['4.0110',52.3,60.1,'Instruktion und Aufklärung'],
+  ['4.0120',73.2,84.2,'Auskunft/Besprechung/Telefonat'],
+  ['4.0130',73.2,84.2,'Versäumte Sitzung Zahnarzt, pro 15 Min.'],
+  ['4.0140',31.4,36.1,'Versäumte Sitzung DH, pro 15 Min.'],
+  ['4.0145',24.4,28.1,'Versäumte Sitzung PA, pro 15 Min.'],
+  ['4.0150',24.4,28.1,'Zuschlag auswärts'],
+  ['4.0160',33.1,38.1,'Zuschlag auswärts nachts'],
+  ['4.0170',19.2,22.1,'Zuschlag auswärts dringlich'],
+  ['4.0180',41.8,48.1,'Zuschlag auswärts Sonn- und Feiertag'],
+  ['4.0190',83.7,96.3,'Wartezeit Spital/Heim, pro 15 Min.'],
+  ['4.0200',29.6,34,'Spital-/Heimbesuch bei laufender Behandlung'],
+  ['4.0240',0,0,'Behandlung ohne Verrechnung'],
+  ['4.0250',36.6,42.1,'Honorierung nach Zeitaufwand, pro 5 Min.'],
+  ['4.0252',36.6,42.1,'Fallbezogene Behandlungs-/Kostenplanung'],
+  ['4.0260',188.3,216.5,'Konsilium'],
+  ['4.0270',73.2,84.2,'Konsilium Behandler'],
+  ['4.0300',13.9,16,'Grundtaxe für Arbeitsplatzdesinfektion'],
+  ['4.0350',3.5,4,'Wegentschädigung, pro km'],
+  ['4.0360',7,8.1,'Wegentschädigung nachts, pro km'],
+  ['4.0400',76.7,88.2,'UV/MV/KVG-Formular'],
+  ['4.0410',66.2,76.1,'IV-Formular Zahnarzt'],
+  ['4.0420',94.1,108.2,'IV-Formular Kieferorthopäde'],
+  ['4.0430',111.6,128.3,'Verlangter ausführlicher Bericht'],
+  ['4.0440',83.7,96.3,'Zwischenbericht, Ergänzungsbericht, Schlusszeugnis'],
+  ['4.0442',36.6,42.1,'Telefon mit Behörden, Versicherer, Labor (>5 Min.)'],
+  ['4.0450',38.4,44.2,'Rezept, Überweisungsschreiben, Kurzattest'],
+  ['4.0460',76.7,88.2,'Ausführliches Attest Zahnpflegeversicherung'],
+  ['4.0470',83.7,96.3,'Gutachten, pro 15 Min.'],
+  ['4.0490',83.7,96.3,'Vertrauenszahnärztliche Tätigkeit, pro 15 Min.'],
+  ['4.0500',19.2,22.1,'Intraorales Röntgenbild'],
+  ['4.0510',156.9,180.4,'FR/Schädelübersicht'],
+  ['4.0520',122,140.3,'Schädelteilaufnahme'],
+  ['4.0530',156.9,180.4,'OPT'],
+  ['4.0540',55.8,64.2,'Handröntgenbild'],
+  ['4.0560',34.9,40.1,'Röntgenkopie'],
+  ['4.0570',394,453.1,'DVT'],
+  ['4.0600',36.6,42.1,'Lasereinsatz, pro 5 Min.'],
+  ['4.0650',38.4,44.2,'Infiltrationsanästhesie'],
+  ['4.0660',76.7,88.2,'Lachgasanalgesie oder -sedierung, pro Sitzung'],
+  ['4.0680',83.7,96.3,'Zusätzlicher Zeitaufwand bei Allgemeinnarkose, pro 15 Min.'],
+  ['4.0750',38.4,44.2,'Zentrikregistrat'],
+  ['4.0760',101.1,116.3,'Registrat mit Schablone'],
+  ['4.0770',216.2,248.6,'Registrat Pfeilwinkel'],
+  ['4.0780',15.7,18.1,'Latero- oder Protrusionsregistrat'],
+  ['4.0790',59.3,68.2,'FGP-Registrat'],
+  ['4.0800',59.3,68.2,'Gesichtsbogen Mittelwert'],
+  ['4.0810',76.7,88.2,'Sagittale Kondylenbahn'],
+  ['4.0820',92.4,106.3,'Scharnierachsenlokalisation'],
+  ['4.0830',101.1,116.3,'Remontage Totalprothesen'],
+  ['4.0890',15.7,18.1,'Abformung bei DH'],
+  ['4.0960',24.4,28.1,'Schliffkorrektur, pro Zahn oder pro Slice'],
+  ['4.0970',19.2,22.1,'Fotoaufnahme'],
+  ['4.0980',69.7,80.2,'Einsatz des Operationsmikroskopes'],
+  ['4.1000',36.6,42.1,'Mundhygieneanamnese, Instruktion, Motivation, pro 5 Min.'],
+  ['4.1010',7,8.1,'Plaqueanfärbung, pro Sextant'],
+  ['4.1020',5.2,6,'Plaqueindex, pro Sextant'],
+  ['4.1030',7,8.1,'Gingivaindex, pro Sextant'],
+  ['4.1040',12.2,14,'Gingivaindex ausführlich'],
+  ['4.1050',36.6,42.1,'Mikrobiologie, pro 5 Min.'],
+  ['4.1070',10.5,12.1,'Fluoridgelee'],
+  ['4.1080',26.1,30,'Fluoridlack (1–4 Zähne)'],
+  ['4.1090',41.8,48.1,'Fluoridlack (mehr als 4 Zähne)'],
+  ['4.1100',13.9,16,'DH-Praktikantin-Behandlung, pro 5 Min.'],
+  ['4.1105',10.5,12.1,'PA-Praktikantin-Behandlung, pro 5 Min.'],
+  ['4.1110',15.7,18.1,'DH-Behandlung, pro 5 Min.'],
+  ['4.1120',12.2,14,'PA-Behandlung, pro 5 Min.'],
+  ['4.1130',90.6,104.2,'Gruppenprophylaxe Zahnarzt, pro 15 Min.'],
+  ['4.1140',41.8,48.1,'Gruppenprophylaxe DH, pro 15 Min.'],
+  ['4.1150',22.7,26.1,'Gruppenprophylaxe, pro 15 Min.'],
+  ['4.1160',104.6,120.3,'Prophylaxevortrag Zahnarzt, pro 15 Min.'],
+  ['4.1170',48.8,56.1,'Prophylaxevortrag DH, pro 15 Min.'],
+  ['4.1180',34.9,40.1,'Prophylaxevortrag, pro 15 Min.'],
+  ['4.1200',24.4,28.1,'Parodontale Kurzbefundaufnahme'],
+  ['4.1210',177.8,204.5,'Parodontale Befundaufnahme, einfach'],
+  ['4.1220',268.5,308.8,'Parodontale Befundaufnahme, mittelschwer'],
+  ['4.1230',369.6,425,'Parodontale Befundaufnahme, schwer'],
+  ['4.1240',83.7,96.3,'Aufzeichnung Attachment-Niveau'],
+  ['4.1250',36.6,42.1,'Zahnreinigung Zahnarzt, pro 5 Min.'],
+  ['4.1260',36.6,42.1,'Zahnsteinentfernung Zahnarzt, pro 5 Min.'],
+  ['4.1270',22.7,26.1,'Überschussentfernung Füllung'],
+  ['4.1280',80.2,92.2,'Überschussentfernung Krone'],
+  ['4.1290',55.8,64.2,'Gingivektomie Einzelzahn'],
+  ['4.1300',282.4,324.8,'Gingivektomie Sextant'],
+  ['4.1310',383.5,441,'Gingivatransplantat'],
+  ['4.1320',122,140.3,'Gingivatransplantat, weiteres'],
+  ['4.1330',453.2,521.2,'Bindegewebstransplantat'],
+  ['4.1340',156.9,180.4,'Bindegewebstransplantat, weiteres'],
+  ['4.1350',404.4,465.1,'Rezessionsdeckung'],
+  ['4.1360',156.9,180.4,'Rezessionsdeckung, weitere'],
+  ['4.1370',240.6,276.7,'Dreieckslappenoperation'],
+  ['4.1380',122,140.3,'Dreieckslappenoperation, weitere'],
+  ['4.1400',557.8,641.5,'Lappenoperation, mittelschwer'],
+  ['4.1410',648.5,745.8,'Lappenoperation, schwer'],
+  ['4.1420',289.4,332.8,'Parodontaloperation Einzelzahn'],
+  ['4.1430',156.9,180.4,'Lappenoperation, Kombination'],
+  ['4.1440',109.8,126.3,'Massnahmen für Attachment'],
+  ['4.1460',122,140.3,'Parodontalabszess'],
+  ['4.1470',111.6,128.3,'Nachbehandlung nach Parodontaloperation'],
+  ['4.1500',139.5,160.4,'Parodontale Schienung, erster Interdentalraum'],
+  ['4.1510',87.2,100.3,'Parodontale Schienung, weiterer Interdentalraum'],
+  ['4.1520',55.8,64.2,'Parodontale Schienung, erstes Hilfsteil'],
+  ['4.1610',36.6,42.1,'MAP-Befundaufnahme Recall, pro 5 Min.'],
+  ['4.1620',45.3,52.1,'Funktionsbefund'],
+  ['4.1630',55.8,64.2,'Provokationstest'],
+  ['4.1640',48.8,56.1,'Resilienztest'],
+  ['4.1650',55.8,64.2,'Erhebung des Muskelbefundes'],
+  ['4.1660',115.1,132.4,'Feststellung der Kieferrelation'],
+  ['4.1670',45.3,52.1,'Anfärbung vorzeitiger Kontakte'],
+  ['4.1680',33.1,38.1,'Feststellen orofacialer Parafunktionen'],
+  ['4.1690',17.4,20,'Palpation der Kiefergelenke'],
+  ['4.1700',80.2,92.2,'Okklusionsanalyse'],
+  ['4.1710',139.5,160.4,'Einschleifplan'],
+  ['4.1720',36.6,42.1,'Einschleifen, pro 5 Min.'],
+  ['4.1750',104.6,120.3,'Tiefziehschiene'],
+  ['4.1760',275.4,316.7,'Kunststoffschiene'],
+  ['4.1770',303.3,348.8,'Michiganschiene'],
+  ['4.1780',477.7,549.4,'Semipermanente Schiene Metall'],
+  ['4.1790',122,140.3,'Pivotierungsschiene'],
+  ['4.1800',125.5,144.3,'Frontzahn-Jig'],
+  ['4.1810',118.5,136.3,'Abänderung/Reparatur einer Schiene'],
+  ['4.1820',195.2,224.5,'Abänderung/Reparatur einer Schiene mit Abformung'],
+  ['4.1830',345.2,397,'NTI-tss'],
+  ['4.1850',48.8,56.1,'Instruktion physikalische Therapie'],
+  ['4.1860',94.1,108.2,'Instruktion Physiotherapie'],
+  ['4.1870',41.8,48.1,'Therapie mit Ultraschall/Sollux/Mikro-/Kurzwellen/UV'],
+  ['4.1880',36.6,42.1,'Myofunktionelle Therapie, pro 5 Min.'],
+  ['4.1900',55.8,64.2,'MAP-Nachkontrolle'],
+  ['4.1910',36.6,42.1,'Nacheinschleifen Schiene, pro 5 Min.'],
+  ['4.2000',52.3,60.1,'Zahnextraktion, einfach'],
+  ['4.2010',104.6,120.3,'Zahnextraktion, aufwändig'],
+  ['4.2020',136,156.4,'Zahnextraktion mit Separieren'],
+  ['4.2030',226.6,260.6,'Zahnextraktion unter Aufklappung'],
+  ['4.2040',313.8,360.9,'Zahnextraktion unter Aufklappung mit Separieren'],
+  ['4.2050',83.7,96.3,'Hemisektion oder Wurzelamputation'],
+  ['4.2060',289.4,332.8,'Operative Entfernung retinierter Zahn, einfach'],
+  ['4.2070',404.4,465.1,'Operative Entfernung retinierter Zahn, schwer'],
+  ['4.2080',404.4,465.1,'Zahnkeimentnahme zur Transplantation'],
+  ['4.2090',109.8,126.3,'Aufwändige Massnahmen zur Kammerhaltung'],
+  ['4.2100',48.8,56.1,'Kleine Exzision'],
+  ['4.2120',38.4,44.2,'Mundschleimhautbehandlung'],
+  ['4.2130',146.4,168.4,'Probeexzision'],
+  ['4.2140',212.7,244.6,'Exzision'],
+  ['4.2150',320.8,368.9,'Operation einer Ranula'],
+  ['4.2160',174.3,200.4,'Speichelsteinentfernung'],
+  ['4.2170',258,296.7,'Fremdkörperentfernung'],
+  ['4.2180',122,140.3,'Lippen-, Zungen-, Wangenbandkorrektur'],
+  ['4.2190',251,288.7,'Schlotterkammexzision'],
+  ['4.2200',435.8,501.2,'Vestibulumplastik'],
+  ['4.2210',505.5,581.3,'Mundbodenplastik'],
+  ['4.2220',177.8,204.5,'Explorative Aufklappung'],
+  ['4.2230',383.5,441,'Schleimhautentnahme Gaumen'],
+  ['4.2240',313.8,360.9,'Schleimhautentnahme Wange'],
+  ['4.2250',38.4,44.2,'Unterfüttern einer Platte'],
+  ['4.2260',146.4,168.4,'Einfache Bindegewebsentnahme'],
+  ['4.2270',73.2,84.2,'Abszesseröffnung'],
+  ['4.2280',156.9,180.4,'Eröffnung Logenabszess'],
+  ['4.2360',401,461.2,'Zystenoperation mit Auffüllen'],
+  ['4.2370',383.5,441,'Zystenoperation zur Mundhöhle'],
+  ['4.2380',505.5,581.3,'Zystenoperation zur Nasen- oder Kieferhöhle'],
+  ['4.2390',118.5,136.3,'Eingliederung eines Obturators'],
+  ['4.2400',80.2,92.2,'Anpassung des Obturators'],
+  ['4.2410',191.8,220.6,'Revision am Alveolarfortsatz'],
+  ['4.2420',275.4,316.7,'Fremdkörperentfernung (Alveole)'],
+  ['4.2430',320.8,368.9,'Abtragung Spina nasalis'],
+  ['4.2440',352.1,404.9,'Alveolarfortsatzosteotomie'],
+  ['4.2450',373.1,429.1,'Entfernung gutartiger Tumor'],
+  ['4.2460',331.2,380.9,'Transplantation eines Zahnkeims'],
+  ['4.2470',108.1,124.3,'Retrograder Verschluss bei Zystenoperation'],
+  ['4.2480',73.2,84.2,'Resektion bei Zystenoperation'],
+  ['4.2500',237.1,272.7,'Erstbeurteilung und Aufklärung Implantat'],
+  ['4.2510',324.2,372.8,'Sinusbodenelevation bei Implantation'],
+  ['4.2520',659,757.9,'Sinusbodenelevation alleiniger Eingriff'],
+  ['4.2530',669.4,769.8,'1. Implantat'],
+  ['4.2540',401,461.2,'Weiteres Implantat'],
+  ['4.2545',334.7,384.9,'1. Miniimplantat'],
+  ['4.2550',209.2,240.6,'Weiteres Miniimplantat'],
+  ['4.2555',87.2,100.3,'Erste Nachbehandlung bei Implantation'],
+  ['4.2570',118.5,136.3,'Wiedereröffnungsoperation'],
+  ['4.2575',69.7,80.2,'Wiedereröffnungsoperation, weitere'],
+  ['4.2580',80.2,92.2,'Montage und Demontage von Hilfsteilen'],
+  ['4.2590',289.4,332.8,'Entfernung eingeheiltes Implantat'],
+  ['4.2600',52.3,60.1,'Entfernung nicht eingeheiltes, gelockertes Implantat'],
+  ['4.2610',289.4,332.8,'Augmentation bei Implantation'],
+  ['4.2615',109.8,126.3,'Weitere Augmentation bei Implantation'],
+  ['4.2620',578.8,665.6,'Knochenaugmentation, als selbstständiger Eingriff'],
+  ['4.2630',87.2,100.3,'Entfernung der Membran'],
+  ['4.2640',94.1,108.2,'Indirekte Sinusbodenelevation'],
+  ['4.2650',80.2,92.2,'Spülung der Kieferhöhle durch die Alveole'],
+  ['4.2660',101.1,116.3,'Spülung der Kieferhöhle durch die Fossa canina'],
+  ['4.2670',470.7,541.3,'Verschluss einer Mund-Antrum-Verbindung'],
+  ['4.2680',209.2,240.6,'Verschluss nach Antrumperforation'],
+  ['4.2690',195.2,224.5,'Fremdkörperentfernung aus Kieferhöhle'],
+  ['4.2700',38.4,44.2,'Replantation oder Reposition eines Zahnes'],
+  ['4.2710',80.2,92.2,'Alveolarfortsatzreposition, einfach'],
+  ['4.2720',156.9,180.4,'Alveolarfortsatzreposition, schwer'],
+  ['4.2750',118.5,136.3,'Drahtligaturen, pro Quadrant'],
+  ['4.2760',156.9,180.4,'Drahtschiene direkt, pro Quadrant'],
+  ['4.2770',139.5,160.4,'Drahtschiene indirekt, pro Quadrant'],
+  ['4.2780',139.5,160.4,'Drahtkunststoffschiene, pro Quadrant'],
+  ['4.2790',19.2,22.1,'Jede weitere Ligatur'],
+  ['4.2800',156.9,180.4,'Schienenüberzug mit Autopolymerisat'],
+  ['4.2810',149.9,172.4,'Kunststoffschiene, direkt'],
+  ['4.2820',352.1,404.9,'Schiene, zementiert'],
+  ['4.2830',237.1,272.7,'Entfernen einzementierte Schiene'],
+  ['4.2840',118.5,136.3,'Entfernen einligierte Schiene'],
+  ['4.2850',195.2,224.5,'Rezementieren Schiene'],
+  ['4.2860',19.2,22.1,'Erneute Fixation, pro Ligatur'],
+  ['4.2870',156.9,180.4,'Kinnkappenverband'],
+  ['4.2880',125.5,144.3,'Anlegen von intermaxillären Zügen'],
+  ['4.2890',146.4,168.4,'TTS-Schiene'],
+  ['4.2900',41.8,48.1,'Wundkontrolle'],
+  ['4.2910',62.8,72.2,'Wundbehandlung'],
+  ['4.2930',97.6,112.2,'Behandlung einer Nachblutung'],
+  ['4.3000',1736.3,1996.7,'Sekundäre Korrektur des Knochens bei Gaumenspalte'],
+  ['4.3010',1000.6,1150.7,'Osteoplastik'],
+  ['4.3020',944.9,1086.6,'Sekundäre Weichteilkorrektur bei Gaumenspalte'],
+  ['4.3030',550.9,633.5,'Restlochverschluss/Verschiebeplastik'],
+  ['4.3040',1670.1,1920.6,'Velumplastik'],
+  ['4.3050',1391.1,1599.8,'Pharynxplastik'],
+  ['4.3060',278.9,320.7,'Pharynximplantat'],
+  ['4.3070',1502.7,1728.1,'Korrektur Lippen-Kieferspalte, einseitig'],
+  ['4.3080',1331.9,1531.7,'Korrektur Lippenspalte, einseitig'],
+  ['4.3090',1157.5,1331.1,'Stiellappen, erster Eingriff'],
+  ['4.3100',578.8,665.6,'Stiellappen, zweiter Eingriff'],
+  ['4.3110',202.2,232.5,'Kleine Korrekturoperation Lippen'],
+  ['4.3120',435.8,501.2,'Whistling deformity-Korrektur, Amorbogen'],
+  ['4.3130',578.8,665.6,'Nasenstegverlängerung'],
+  ['4.3140',289.4,332.8,'Naseneingangskorrektur'],
+  ['4.3200',1506.2,1732.1,'Alveolarfortsatzosteotomie horizontal'],
+  ['4.3210',435.8,501.2,'Alveolarfortsatzosteotomie vertikal'],
+  ['4.3220',523,601.5,'Alveolarfortsatzosteotomie isoliert'],
+  ['4.3230',1272.6,1463.5,'Kieferosteotomie vollständig, pro Stelle'],
+  ['4.3240',1101.7,1267,'Kieferosteotomie unvollständig'],
+  ['4.3250',693.8,797.9,'Zungenreduktionsplastik'],
+  ['4.3260',278.9,320.7,'OP-Planung an Modellen'],
+  ['4.3270',435.8,501.2,'Diagnostisches Set-Up (Kiefer)'],
+  ['4.3280',240.6,276.7,'Prediction planning/Simulografie'],
+  ['4.3300',289.4,332.8,'Reposition Jochbein/-bogen, Maxilla lateral'],
+  ['4.3310',578.8,665.6,'Disimpaction Mittelgesicht'],
+  ['4.3320',87.2,100.3,'Reposition bei Distraktion oder Stufenbildung'],
+  ['4.3330',174.3,200.4,'Reposition bei Stufenbildung und Verkeilung'],
+  ['4.3340',289.4,332.8,'Reposition bei starker Dislokation, Trümmerfraktur'],
+  ['4.3350',278.9,320.7,'Zuschlag für Zugang pro Etage und Seite'],
+  ['4.3360',41.8,48.1,'Zuschlag für transkonjunktivalen Zugang'],
+  ['4.3370',669.4,769.8,'Zuschlag für Zugang, pro Seite'],
+  ['4.3400',669.4,769.8,'Dekompression der Orbita'],
+  ['4.3410',1670.1,1920.6,'Dekompression des N. opticus'],
+  ['4.3420',753.1,866.1,'Fixation kanthales Ligament'],
+  ['4.3430',390.5,449.1,'Sinusdrainage transnasal'],
+  ['4.3440',669.4,769.8,'Sinustamponade'],
+  ['4.3450',557.8,641.5,'Revision zur Stillung einer Nachblutung'],
+  ['4.3500',115.1,132.4,'Perimandibuläre/transmaxilläre Drahtung'],
+  ['4.3510',812.4,934.3,'Interskelettale Drahtaufhängung'],
+  ['4.3520',927.4,1066.5,'Drahtosteosynthese'],
+  ['4.3530',1157.5,1331.1,'Platten, Zugschrauben'],
+  ['4.3540',418.4,481.2,'Fixateur/Craniofixateur externe'],
+  ['4.3550',1272.6,1463.5,'Pseudoarthrosebehandlung durch Osteosynthese'],
+  ['4.3560',278.9,320.7,'Modellplanung, alte Fraktur'],
+  ['4.3570',2318.5,2666.3,'Rekonstruktion durchgehender UK-Defekt'],
+  ['4.3580',289.4,332.8,'Entfernung Osteosynthesematerial, pro Operationsstelle'],
+  ['4.3600',289.4,332.8,'Knochen/Knorpelentnahme zur Transplantation'],
+  ['4.3610',983.2,1130.7,'Konturaufbau, Knochenformung'],
+  ['4.3630',41.8,48.1,'Reposition KG-Luxation'],
+  ['4.3640',983.2,1130.7,'Exstripation Diskus/Köpfchen, pro Seite'],
+  ['4.3650',753.1,866.1,'Resektion Proc. Muscularis, pro Seite'],
+  ['4.3660',1446.9,1663.9,'OP Ankylose/Arthroplastik'],
+  ['4.3670',278.9,320.7,'Diagnostische Arthroskopie'],
+  ['4.3680',446.3,513.2,'Therapeutische Arthroskopie'],
+  ['4.3700',348.7,401,'Kürettage osteomyelitischer Herd'],
+  ['4.3710',1272.6,1463.5,'Dekortikation bei Osteomyelitis'],
+  ['4.3750',390.5,449.1,'Dentogener Logenabszess, extraoral'],
+  ['4.3850',195.2,224.5,'Resektionskloss'],
+  ['4.3870',753.1,866.1,'Mundbodenplastik ausgedehnt'],
+  ['4.3880',317.3,364.9,'Tuberplastik, pro Seite'],
+  ['4.3890',578.8,665.6,'Aufbauende Kammplastik'],
+  ['4.3900',463.7,533.3,'Zuschlag für Hauttransplantation'],
+  ['4.3930',836.8,962.3,'Sekundäre Deckung oroantrale Fistel'],
+  ['4.3940',446.3,513.2,'Entfernung Speichelstein intraoral'],
+  ['4.4000',26.1,30,'Indirekte Überkappung'],
+  ['4.4010',34.9,40.1,'Direkte Überkappung'],
+  ['4.4020',73.2,84.2,'Vitalamputation oder notfallmässige Trepanation'],
+  ['4.4400',181.3,208.5,'Pulpaexstirpation, 1 Kanal'],
+  ['4.4410',233.6,268.6,'Pulpaexstirpation, 2 Kanäle'],
+  ['4.4420',289.4,332.8,'Pulpaexstirpation, 3 Kanäle'],
+  ['4.4430',52.3,60.1,'Pulpaexstirpation, weiterer Kanal'],
+  ['4.4500',136,156.4,'Einlage, 1 Kanal, neue Endometrie'],
+  ['4.4505',115.1,132.4,'Einlage, 1 Kanal, vorhandene Endometrie'],
+  ['4.4510',167.4,192.5,'Einlage, 2 Kanäle, neue Endometrie'],
+  ['4.4515',139.5,160.4,'Einlage, 2 Kanäle, vorhandene Endometrie'],
+  ['4.4520',205.7,236.6,'Einlage, 3 Kanäle, neue Endometrie'],
+  ['4.4525',174.3,200.4,'Einlage, 3 Kanäle, vorhandene Endometrie'],
+  ['4.4530',52.3,60.1,'Einlage, jeder weitere Kanal, neue Endometrie'],
+  ['4.4535',52.3,60.1,'Einlage, jeder weitere Kanal, vorhandene Endometrie'],
+  ['4.4550',181.3,208.5,'Wurzelfüllung, 1 Kanal, neue Endometrie'],
+  ['4.4555',160.4,184.5,'Wurzelfüllung, 1 Kanal, vorhandene Endometrie'],
+  ['4.4560',223.1,256.6,'Wurzelfüllung, 2 Kanäle, neue Endometrie'],
+  ['4.4565',198.7,228.5,'Wurzelfüllung, 2 Kanäle, vorhandene Endometrie'],
+  ['4.4570',278.9,320.7,'Wurzelfüllung, 3 Kanäle, neue Endometrie'],
+  ['4.4575',247.5,284.6,'Wurzelfüllung, 3 Kanäle, vorhandene Endometrie'],
+  ['4.4580',52.3,60.1,'Wurzelfüllung, jeder weitere Kanal, neue Endometrie'],
+  ['4.4585',52.3,60.1,'Wurzelfüllung, jeder weitere Kanal, vorhandene Endometrie'],
+  ['4.4600',265,304.8,'WB 1 Sitzung, 1 Kanal'],
+  ['4.4610',352.1,404.9,'WB 1 Sitzung, 2 Kanäle'],
+  ['4.4620',481.1,553.3,'WB 1 Sitzung, 3 Kanäle'],
+  ['4.4630',52.3,60.1,'WB 1 Sitzung, weiterer Kanal'],
+  ['4.4650',36.6,42.1,'WB-Revision, pro 5 Min.'],
+  ['4.4660',73.2,84.2,'Apexifikation oder Perforationsverschluss'],
+  ['4.4700',111.6,128.3,'Bleichen devitaler Zahn'],
+  ['4.4710',104.6,120.3,'Homebleaching, pro Kiefer'],
+  ['4.4720',36.6,42.1,'In Office Bleaching, pro 5 Min.'],
+  ['4.4730',41.8,48.1,'Nachkontrolle Zahnbleichen'],
+  ['4.5000',38.4,44.2,'Provisorische Füllung (Schnellverschluss)'],
+  ['4.5010',52.3,60.1,'Glasionomerzement, 1-fl.'],
+  ['4.5020',87.2,100.3,'Glasionomerzement, 2-fl.'],
+  ['4.5030',122,140.3,'Glasionomerzement, 3-fl.'],
+  ['4.5050',83.7,96.3,'Amalgam, 1-fl.'],
+  ['4.5060',38.4,44.2,'Weiteres Amalgam, 1-fl.'],
+  ['4.5090',136,156.4,'Amalgam, 2-fl.'],
+  ['4.5100',90.6,104.2,'Weiteres Amalgam, 2-fl.'],
+  ['4.5130',184.8,212.5,'Amalgam, 3-fl.'],
+  ['4.5350',122,140.3,'Kompositfüllung, 1-fl.'],
+  ['4.5360',76.7,88.2,'Weitere Kompositfüllung, 1-fl.'],
+  ['4.5370',142.9,164.3,'Kompositfüllung, interdental Front'],
+  ['4.5380',97.6,112.2,'Weitere Kompositfüllung, interdental Front'],
+  ['4.5390',170.8,196.4,'Kompositkantenaufbau'],
+  ['4.5400',125.5,144.3,'Weiterer Kompositkantenaufbau'],
+  ['4.5410',142.9,164.3,'Kompositfüllung Prämolar/Milchmolar, 2-fl.'],
+  ['4.5420',97.6,112.2,'Weitere Kompositfüllung Prämolar/Milchmolar, 2-fl.'],
+  ['4.5430',181.3,208.5,'Kompositfüllung Molar, 2-fl.'],
+  ['4.5440',136,156.4,'Weitere Kompositfüllung Molar, 2-fl.'],
+  ['4.5450',216.2,248.6,'Kompositfüllung Prämolar/Milchmolar, 3-fl.'],
+  ['4.5460',170.8,196.4,'Weitere Kompositfüllung Prämolar/Milchmolar, 3-fl.'],
+  ['4.5470',233.6,268.6,'Kompositfüllung, 3-fl. Molar'],
+  ['4.5480',188.3,216.5,'Weitere Kompositfüllung, 3-fl. Molar'],
+  ['4.5510',240.6,276.7,'Kompositaufbau Prämolar/Milchmolar'],
+  ['4.5520',195.2,224.5,'Weiterer Kompositaufbau Prämolar/Milchmolar'],
+  ['4.5530',258,296.7,'Kompositaufbau Molar, 1–2 Höcker'],
+  ['4.5540',212.7,244.6,'Weiterer Kompositaufbau Molar, 1–2 Höcker'],
+  ['4.5550',285.9,328.8,'Kompositaufbau Molar, 3–4 Höcker'],
+  ['4.5560',240.6,276.7,'Weiterer Kompositaufbau Molar, 3–4 Höcker'],
+  ['4.5650',526.5,605.5,'Keramik-/Kunststoff-Inlay, indir. 1-fl.'],
+  ['4.5660',610.1,701.6,'Keramik-/Kunststoff-Inlay, indir. 2-fl.'],
+  ['4.5670',711.3,818,'Keramik-/Kunststoff-Inlay, indir. 3-fl.'],
+  ['4.5700',526.5,605.5,'Cerec, 1-fl.'],
+  ['4.5710',610.1,701.6,'Cerec, 2-fl.'],
+  ['4.5720',711.3,818,'Cerec, 3-fl.'],
+  ['4.5730',767,882.1,'Cerec, Overlay'],
+  ['4.5740',366.1,421,'Kunststoff-Inlay, direkt 1-fl.'],
+  ['4.5742',505.5,581.3,'Kunststoff-Inlay, direkt 2-fl.'],
+  ['4.5744',610.1,701.6,'Kunststoff-Inlay, direkt 3-fl.'],
+  ['4.5750',373.1,429.1,'Kunststoff-Schale, konfektioniert'],
+  ['4.5760',373.1,429.1,'Porzellanschale, konfektioniert'],
+  ['4.5770',523,601.5,'Kunststoff- oder Porzellanschale, indirekt'],
+  ['4.5780',167.4,192.5,'Kunststoffüberzug'],
+  ['4.5790',523,601.5,'Cerec-Veneer'],
+  ['4.5800',19.2,22.1,'Schmelzätzung'],
+  ['4.5810',15.7,18.1,'Dentinhaftung'],
+  ['4.5820',29.6,34,'Fissurenversiegelung'],
+  ['4.5830',62.8,72.2,'Erweiterte Fissurenversiegelung'],
+  ['4.5860',477.7,549.4,'Goldgussfüllung, 1-fl.'],
+  ['4.5870',571.8,657.6,'Goldgussfüllung, 2-fl.'],
+  ['4.5880',641.5,737.7,'Goldgussfüllung, 3-fl.'],
+  ['4.5910',76.7,88.2,'Intrakanalärer Stift'],
+  ['4.5920',55.8,64.2,'Intrakanaläre Schraube'],
+  ['4.5940',15.7,18.1,'Zement-Unterfüllung'],
+  ['4.5950',10.5,12.1,'Liner, Lack'],
+  ['4.6000',927.4,1066.5,'Totalprothese OK oder UK'],
+  ['4.6010',414.9,477.1,'Immediatprothese'],
+  ['4.6100',219.7,252.7,'Provisorische Kunststoffprothese, Nylonprothese'],
+  ['4.6110',530,609.5,'Kunststoffprothese >2 Klammern'],
+  ['4.6120',819.3,942.2,'Modellgussprothese'],
+  ['4.6150',1087.8,1251,'Hybridprothese'],
+  ['4.6200',156.9,180.4,'Direkte Fixation einer Retention'],
+  ['4.6340',31.4,36.1,'Farb- und Formauswahl'],
+  ['4.6350',320.8,368.9,'Diagnostisches Aufstellen'],
+  ['4.6360',122,140.3,'Individuelles Aufstellen am Patienten'],
+  ['4.6370',90.6,104.2,'Frontzahneinprobe'],
+  ['4.6380',41.8,48.1,'Instruktion bei Prothesen'],
+  ['4.6390',76.7,88.2,'Nachsorge mit Retouche'],
+  ['4.6400',48.8,56.1,'Nachsorge ohne Retouche'],
+  ['4.6500',41.8,48.1,'Prothesenreparatur ohne Inspektion'],
+  ['4.6510',69.7,80.2,'Prothesenreparatur mit Inspektion'],
+  ['4.6520',174.3,200.4,'Reparatur mit Abformung'],
+  ['4.6530',212.7,244.6,'Reparatur mit Abformung und Gegenbiss'],
+  ['4.6540',31.4,36.1,'Reparatur, Zuschlag pro Klammer'],
+  ['4.6550',24.4,28.1,'Reparatur, Zuschlag pro Zahn'],
+  ['4.6560',132.5,152.4,'Provisorisches Ergänzen eines Zahnes'],
+  ['4.6700',258,296.7,'Unterfütterung Totalprothese, indirekt'],
+  ['4.6710',146.4,168.4,'Unterfütterung Teilprothese, indirekt'],
+  ['4.6720',177.8,204.5,'Unterfütterung Totalprothese, direkt'],
+  ['4.6730',153.4,176.4,'Unterfütterung Teilprothese, direkt'],
+  ['4.6900',160.4,184.5,'Provisorische Unterfütterung'],
+  ['4.6910',240.6,276.7,'Provisorische Unterfütterung und Aushärtung'],
+  ['4.7060',453.2,521.2,'Stiftkappe'],
+  ['4.7065',453.2,521.2,'Retentionselement auf Implantat'],
+  ['4.7070',770.5,886.1,'Krone in der Oberkieferfront'],
+  ['4.7080',652,749.8,'Krone'],
+  ['4.7085',652,749.8,'Implantatkrone'],
+  ['4.7090',836.8,962.3,'Cerec-Krone'],
+  ['4.7100',104.6,120.3,'Zwischenglied oder Flieger, unverblendet'],
+  ['4.7110',191.8,220.6,'Zwischenglied oder Flieger, verblendet'],
+  ['4.7120',338.2,388.9,'Zwischenglied oder Flieger, VMK/Keramik'],
+  ['4.7140',732.2,842,'Adhäsivbrücke, 1. Pfeiler'],
+  ['4.7160',237.1,272.7,'Adhäsivbrücke, weiterer Pfeiler'],
+  ['4.7170',467.2,537.3,'Adhäsivattachment'],
+  ['4.7210',219.7,252.7,'Stahlkrone'],
+  ['4.7230',83.7,96.3,'Kunststoffkrone'],
+  ['4.7240',132.5,152.4,'Provisorische Kunststoffkrone, direkt'],
+  ['4.7250',69.7,80.2,'Provisorische Kunststoffkrone, indirekt'],
+  ['4.7260',153.4,176.4,'Provisorische Kunststoffbrücke 3-gliedrig, indirekt'],
+  ['4.7270',41.8,48.1,'Weiteres Glied, indirekt'],
+  ['4.7280',278.9,320.7,'Provisorische Kunststoffbrücke, direkt'],
+  ['4.7290',62.8,72.2,'Weiteres Glied, direkt'],
+  ['4.7300',111.6,128.3,'Reparatur eines Provisoriums'],
+  ['4.7310',460.2,529.2,'Kunststoffkrone, Stiftkrone'],
+  ['4.7320',530,609.5,'Kunststoffbrücke, 3-gliedrig'],
+  ['4.7330',80.2,92.2,'Jeder weitere Pfeiler'],
+  ['4.7340',41.8,48.1,'Jedes weitere Zwischenglied'],
+  ['4.7500',463.7,533.3,'Gegossener Stumpfaufbau, direkt'],
+  ['4.7510',383.5,441,'Gegossener Stumpfaufbau, indirekt'],
+  ['4.7520',251,288.7,'Aufbau mit plastischem Material'],
+  ['4.7550',52.3,60.1,'Provisorisches Zementieren, pro Pfeiler'],
+  ['4.7560',156.9,180.4,'Rezementieren'],
+  ['4.7590',55.8,64.2,'Entfernen provisorisch zementierter 3-gl. Brücke'],
+  ['4.7600',19.2,22.1,'Entfernen prov. zementierter Brücke, jeder weitere Pfeiler'],
+  ['4.7610',237.1,272.7,'Rezementieren 3-gl. Brücke'],
+  ['4.7620',80.2,92.2,'Weiterer Pfeiler'],
+  ['4.7720',45.3,52.1,'Lötfixation ohne Sägen'],
+  ['4.7730',80.2,92.2,'Lötfixation mit Sägen'],
+  ['4.7750',237.1,272.7,'Einbau Geschiebe'],
+  ['4.7760',331.2,380.9,'Zuschlag für Krone unter bestehender Klammer'],
+  ['4.7770',73.2,84.2,'Nachkontrolle Kronen/Brücken'],
+  ['4.7850',258,296.7,'Ersatz einer Facette'],
+  ['4.7880',156.9,180.4,'Wiederbefestigen einer Adhäsivbrücke, pro Pfeiler'],
+  ['4.7890',62.8,72.2,'Entfernen Krone'],
+  ['4.7900',83.7,96.3,'Entfernen Stift oder Schraube'],
+  ['4.8000',104.6,120.3,'Erstbeurteilung und Beratung KO'],
+  ['4.8010',52.3,60.1,'KO-Anamnese'],
+  ['4.8020',52.3,60.1,'Status praesens'],
+  ['4.8030',38.4,44.2,'Funktionsanalyse'],
+  ['4.8040',38.4,44.2,'Kooperationsdiagnostik'],
+  ['4.8050',160.4,184.5,'Besprechung Patient/Eltern'],
+  ['4.8060',146.4,168.4,'Platzanalyse'],
+  ['4.8070',209.2,240.6,'Diagnostisches Set-Up (KO)'],
+  ['4.8080',156.9,180.4,'Durchzeichnung FR'],
+  ['4.8090',216.2,248.6,'Cephalometrisches Set-Up'],
+  ['4.8100',125.5,144.3,'Planung'],
+  ['4.8110',59.3,68.2,'Instruktion Patient/Eltern'],
+  ['4.8150',275.4,316.7,'Platte aktiv'],
+  ['4.8160',261.5,300.7,'Retentionsplatte'],
+  ['4.8170',460.2,529.2,'Bimaxilläres Gerät'],
+  ['4.8180',275.4,316.7,'Aufbissschiene'],
+  ['4.8190',219.7,252.7,'Positioner'],
+  ['4.8200',146.4,168.4,'Alignerbehandlung, einfach'],
+  ['4.8210',198.7,228.5,'Schiefe Ebene, direkt'],
+  ['4.8230',97.6,112.2,'Kopf-Kinn-Kappe'],
+  ['4.8230.M',51.40,51.40,'Material zu 4.8230'],
+  ['4.8240',142.9,164.3,'Headgear'],
+  ['4.8240.M',36.60,36.60,'Material zu 4.8240'],
+  ['4.8250',313.8,360.9,'Growth Guide Appliance'],
+  ['4.8250.M',127.00,127.00,'Material zu 4.8250'],
+  ['4.8260',156.9,180.4,'Reverse Headgear'],
+  ['4.8260.M',233.00,233.00,'Material zu 4.8260'],
+  ['4.8300',20.9,24,'Messingligatur oder De-Impactor'],
+  ['4.8320',29.6,34,'Hilfsteil'],
+  ['4.8330',122,140.3,'Einzementieren eines Bandes'],
+  ['4.8330.M',20.95,20.95,'Material zu 4.8330'],
+  ['4.8340',38.4,44.2,'Aufkleben eines Brackets oder Hilfsteils'],
+  ['4.8340.M',12.95,12.95,'Material zu 4.8340'],
+  ['4.8350',174.3,200.4,'Lingual- oder Palatinalbogen, direkt'],
+  ['4.8350.M',10.20,10.20,'Material zu 4.8350'],
+  ['4.8360',289.4,332.8,'Lingual- oder Palatinalbogen, indirekt'],
+  ['4.8370',142.9,164.3,'Lip Bumper'],
+  ['4.8370.M',14.55,14.55,'Material zu 4.8370'],
+  ['4.8390',136,156.4,'Bogen vorgefertigt'],
+  ['4.8400',156.9,180.4,'Bogen individualisiert, einfach'],
+  ['4.8410',219.7,252.7,'Bogen individualisiert, komplex'],
+  ['4.8420',338.2,388.9,'Burstone Mechanik'],
+  ['4.8430',139.5,160.4,'Segmentbogen, aktiv mit Loop'],
+  ['4.8440',69.7,80.2,'Segmentbogen, ohne Biegungen'],
+  ['4.8450',324.2,372.8,'Lückenschlussbogen, mit mindestens 3 Loops'],
+  ['4.8530',606.7,697.7,'Herbstapparatur'],
+  ['4.8540',278.9,320.7,'Festsitzende intermaxilläre Mechanik, beidseitig'],
+  ['4.8540.M',192.60,192.60,'Material zu 4.8540'],
+  ['4.8550',725.2,834,'Alignerbehandlung'],
+  ['4.8560',38.4,44.2,'Attachment zu Alignerbehandlung'],
+  ['4.8570',81.9,94.2,'Alignerbehandlung, Kontrolle'],
+  ['4.8600',48.8,56.1,'KO-Kontrolle'],
+  ['4.8610',80.2,92.2,'KO-Kontrolle mit Revision'],
+  ['4.8620',104.6,120.3,'Aus- und Einligieren eines bestehenden Bogens'],
+  ['4.8630',83.7,96.3,'Reparatur ohne Abformung'],
+  ['4.8640',195.2,224.5,'Reparatur mit Abformung'],
+  ['4.8650',170.8,196.4,'Direkte Unterfütterung'],
+  ['4.8660',198.7,228.5,'Okklusaler Aufbiss'],
+  ['4.8670',317.3,364.9,'Voraktiv. bimax. Apparatur, direkt'],
+  ['4.8680',230.1,264.6,'Voraktiv. bimax. Apparatur, indirekt'],
+  ['4.8690',87.2,100.3,'Wiedereinzementieren Band'],
+  ['4.8700',83.7,96.3,'Wiederaufkleben Bracket oder Hilfsteil'],
+  ['4.8710',20.9,24,'Entfernung Band, Bracket, Miniscrew, mit Reinigung'],
+  ['4.8720',19.2,22.1,'Kleben, pro Stelle'],
+  ['4.8730',7,8.1,'Entfernung eines Bandes oder Hilfsteils, ohne Reinigung'],
+  ['4.8800',237.1,272.7,'Kieferabformung Kleinkind'],
+  ['4.8810',125.5,144.3,'Kieferabformung mit individuellem Löffel bei LKG'],
+  ['4.8820',352.1,404.9,'Platte weich, unterfüttert'],
+  ['4.8830',156.9,180.4,'Revisionsarbeit an Platte'],
+  ['4.8840',101.1,116.3,'Extraorale Bandage'],
+  ['4.8900',488.1,561.3,'Anschlingung retinierter Zahn'],
+  ['4.8910',369.6,425,'Weitere Anschlingung retinierter Zahn'],
+  ['4.8950',87.2,100.3,'Mini-Screw'],
+  ['4.8960',401,461.2,'Ortho-Gaumenimplantat'],
+  ['4.8970',289.4,332.8,'Entfernung Ortho-Gaumenimplantat'],
+  ['4.9800',18.9,21.7,'Erste Assistenz/Hauptassistenz, pro 5 Min.'],
+  ['4.9810',11.3,13,'Zweite/jede weitere Assistenz, pro 5 Min.'],
+  ['4.9830',11.3,13,'OP-Benützung, pro 5 Min.'],
+  ['4.9850',11.3,13,'Postoperative Überwachung, pro 5 Min.']
+];
+
+const ssoToObj = ([number, medianPrice, maxPrice, description]) => ({
+  number, description, medianPrice, maxPrice
+});
+
+// ─────────── State ───────────
+let tariffs = [];
+let cases = [];
+let selectedInsurance = 'krankenkasse';
+let editingTariffId = null;
+
+// ─────────── Storage ───────────
+async function loadData() {
+  try {
+    const t = await window.storage.get('tariffs');
+    tariffs = t ? JSON.parse(t.value) : [];
+  } catch (e) { tariffs = []; }
+  try {
+    const c = await window.storage.get('cases');
+    cases = c ? JSON.parse(c.value) : [];
+  } catch (e) { cases = []; }
+
+  // Migrate any legacy tariff shape: { number, description, points, medianMultiplier, maxMultiplier }
+  // into { number, description, medianPrice, maxPrice }
+  tariffs = tariffs.map(t => {
+    if (t.medianPrice != null && t.maxPrice != null) return t;
+    const points = t.points != null ? t.points : 1;
+    return {
+      number: t.number,
+      description: t.description || '',
+      medianPrice: (t.medianMultiplier != null ? t.medianMultiplier : 0) * points,
+      maxPrice: (t.maxMultiplier != null ? t.maxMultiplier : 0) * points
+    };
+  });
+
+  // Drop the v1 sample tariffs ("(Beispiel)") so the SSO data takes over cleanly
+  tariffs = tariffs.filter(t => !(t.description || '').includes('(Beispiel)'));
+}
+async function saveTariffs() {
+  try { await window.storage.set('tariffs', JSON.stringify(tariffs)); }
+  catch (e) { console.error(e); toast('Speichern fehlgeschlagen'); }
+}
+async function saveCases() {
+  try { await window.storage.set('cases', JSON.stringify(cases)); }
+  catch (e) { console.error(e); toast('Speichern fehlgeschlagen'); }
+}
+
+// ─────────── Helpers ───────────
+const fmtCHF = n => 'CHF ' + Number(n).toLocaleString('de-CH', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const fmtNum = n => Number(n).toLocaleString('de-CH', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+const insLabel = i => ({ krankenkasse: 'Krankenkasse', unfall: 'Unfallvers.', privat: 'Privatvers.' }[i] || i);
+const escapeHtml = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
+
+function toast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  clearTimeout(toast._t);
+  toast._t = setTimeout(() => el.classList.remove('show'), 1900);
+}
+
+function setNowDateTime() {
+  const now = new Date();
+  const offset = now.getTimezoneOffset() * 60000;
+  document.getElementById('case-time').value = new Date(now - offset).toISOString().slice(0, 16);
+}
+
+function findTariff(num) {
+  if (!num) return null;
+  const q = num.trim();
+  return tariffs.find(t => t.number === q) || null;
+}
+
+// ─────────── Navigation ───────────
+const titles = {
+  case:     ['Neuer Fall',     'Patient erfassen'],
+  umsatz:   ['Umsatz',         'Übersicht & Verlauf'],
+  settings: ['Einstellungen',  'Tarife & Export']
+};
+
+document.querySelectorAll('nav.tabs button').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const screen = btn.dataset.screen;
+    document.querySelectorAll('nav.tabs button').forEach(b => b.classList.toggle('active', b === btn));
+    document.querySelectorAll('.screen').forEach(s => s.classList.toggle('active', s.id === 'screen-' + screen));
+    const [t, s] = titles[screen];
+    document.getElementById('page-title').innerHTML = '<span class="brand-mark"></span>' + escapeHtml(t);
+    document.getElementById('page-sub').textContent = s;
+    if (screen === 'umsatz') renderUmsatz();
+    if (screen === 'settings') renderTariffs();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  });
+});
+
+// ─────────── Insurance tabs ───────────
+document.querySelectorAll('.insurance-tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    document.querySelectorAll('.insurance-tab').forEach(t => t.classList.toggle('active', t === tab));
+    selectedInsurance = tab.dataset.ins;
+  });
+});
+
+// ─────────── Case form: tariff lookup & save ───────────
+const tariffInput = document.getElementById('tariff-input');
+const tariffSuggest = document.getElementById('tariff-suggest');
+const tariffInfo = document.getElementById('tariff-info');
+
+function getRabatt() {
+  const v = parseFloat(String(document.getElementById('rabatt').value).replace(',', '.'));
+  if (isNaN(v) || v < 0) return 0;
+  if (v > 100) return 100;
+  return v;
+}
+
+function renderTariffInfo() {
+  const num = tariffInput.value.trim();
+  if (!num) { tariffInfo.innerHTML = ''; return; }
+  const t = findTariff(num);
+  if (!t) {
+    tariffInfo.innerHTML = `<div class="tariff-detail warn">Kein Tarif mit Nummer <span class="mono">${escapeHtml(num)}</span>. Vorschlag aus Liste wählen oder in Einstellungen anlegen.</div>`;
+    return;
+  }
+  const rabatt = getRabatt();
+  const factor = 1 - rabatt / 100;
+  const medTotal = t.medianPrice * factor;
+  const maxTotal = t.maxPrice * factor;
+  const rabattHint = rabatt > 0
+    ? `<div style="margin-top:6px; font-size:12px; color:var(--accent);">${fmtNum(rabatt)}% Rabatt aktiv</div>`
+    : '';
+  tariffInfo.innerHTML = `
+    <div class="tariff-detail">
+      <div class="desc">${escapeHtml(t.description || '—')}</div>
+      ${rabattHint}
+    </div>
+    <div class="multiplier-buttons">
+      <button class="mult-btn" data-type="median">
+        <div class="ml-label">Median</div>
+        <div class="ml-val">${fmtCHF(t.medianPrice)}</div>
+        ${rabatt > 0 ? `<div class="ml-total">→ ${fmtCHF(medTotal)}</div>` : ''}
+      </button>
+      <button class="mult-btn" data-type="max">
+        <div class="ml-label">Max</div>
+        <div class="ml-val">${fmtCHF(t.maxPrice)}</div>
+        ${rabatt > 0 ? `<div class="ml-total">→ ${fmtCHF(maxTotal)}</div>` : ''}
+      </button>
+    </div>
+  `;
+  tariffInfo.querySelectorAll('.mult-btn').forEach(btn => {
+    btn.addEventListener('click', () => saveCase(btn.dataset.type));
+  });
+}
+
+function renderSuggestions() {
+  const q = tariffInput.value.trim().toLowerCase();
+  if (!q || q.length < 1) { tariffSuggest.classList.remove('show'); return; }
+  const matches = tariffs.filter(t =>
+    t.number.toLowerCase().includes(q) ||
+    (t.description || '').toLowerCase().includes(q)
+  ).slice(0, 12);
+  if (matches.length === 0 || (matches.length === 1 && matches[0].number === tariffInput.value.trim())) {
+    tariffSuggest.classList.remove('show');
+    return;
+  }
+  tariffSuggest.innerHTML = matches.map(t => `
+    <div class="tariff-suggest-item" data-num="${escapeHtml(t.number)}">
+      <div class="ts-num">${escapeHtml(t.number)}</div>
+      <div class="ts-desc">${escapeHtml(t.description || '')}</div>
+      <div class="ts-prices">Median ${fmtCHF(t.medianPrice)} · Max ${fmtCHF(t.maxPrice)}</div>
+    </div>
+  `).join('');
+  tariffSuggest.classList.add('show');
+  tariffSuggest.querySelectorAll('.tariff-suggest-item').forEach(it => {
+    it.addEventListener('mousedown', e => e.preventDefault());
+    it.addEventListener('click', () => {
+      tariffInput.value = it.dataset.num;
+      tariffSuggest.classList.remove('show');
+      renderTariffInfo();
+    });
+  });
+}
+
+tariffInput.addEventListener('input', () => {
+  renderSuggestions();
+  renderTariffInfo();
+});
+tariffInput.addEventListener('focus', renderSuggestions);
+tariffInput.addEventListener('blur', () => setTimeout(() => tariffSuggest.classList.remove('show'), 180));
+document.getElementById('rabatt').addEventListener('input', renderTariffInfo);
+
+async function saveCase(priceType) {
+  const patientId = document.getElementById('patient-id').value.trim();
+  const time = document.getElementById('case-time').value;
+  const tariffNum = tariffInput.value.trim();
+
+  if (!patientId) { toast('Patienten-ID fehlt'); return; }
+  if (!time) { toast('Datum/Zeit fehlt'); return; }
+  const t = findTariff(tariffNum);
+  if (!t) { toast('Tarif nicht gefunden'); return; }
+
+  const unitPrice = priceType === 'max' ? t.maxPrice : t.medianPrice;
+  const rabatt = getRabatt();
+  const grossTotal = unitPrice;
+  const total = grossTotal * (1 - rabatt / 100);
+
+  cases.push({
+    id: uid(),
+    patientId,
+    insurance: selectedInsurance,
+    timestamp: time,
+    tariffNumber: tariffNum,
+    tariffDescription: t.description || '',
+    unitPrice,
+    priceType,
+    rabatt,
+    grossTotal,
+    total
+  });
+  await saveCases();
+  toast(`Gespeichert · ${fmtCHF(total)}`);
+
+  tariffInput.value = '';
+  document.getElementById('rabatt').value = '0';
+  tariffInfo.innerHTML = '';
+  setNowDateTime();
+  document.getElementById('patient-id').focus({ preventScroll: true });
+}
+
+// ─────────── Umsatz section ───────────
+function caseTotal(c) {
+  // backward-compat: old cases stored total directly; new ones too
+  return Number(c.total) || 0;
+}
+
+function renderUmsatz() {
+  const now = new Date();
+  const startMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().slice(0, 16);
+  const startYear = new Date(now.getFullYear(), 0, 1).toISOString().slice(0, 16);
+
+  let mtdSum = 0, mtdCount = 0;
+  let ytdSum = 0, ytdCount = 0;
+  for (const c of cases) {
+    const tot = caseTotal(c);
+    if (c.timestamp >= startYear) { ytdSum += tot; ytdCount++; }
+    if (c.timestamp >= startMonth) { mtdSum += tot; mtdCount++; }
+  }
+  document.getElementById('mtd-amount').textContent = fmtCHF(mtdSum);
+  document.getElementById('mtd-meta').textContent = `${mtdCount} ${mtdCount === 1 ? 'Fall' : 'Fälle'}`;
+  document.getElementById('ytd-amount').textContent = fmtCHF(ytdSum);
+  document.getElementById('ytd-meta').textContent = `${ytdCount} ${ytdCount === 1 ? 'Fall' : 'Fälle'}`;
+
+  renderCaseList();
+}
+
+function renderCaseList() {
+  const from = document.getElementById('filter-from').value;
+  const to = document.getElementById('filter-to').value;
+  const pid = document.getElementById('filter-patient').value.trim().toLowerCase();
+
+  let list = [...cases];
+  if (from) list = list.filter(c => c.timestamp >= from);
+  if (to) list = list.filter(c => c.timestamp <= to + 'T23:59:59');
+  if (pid) list = list.filter(c => c.patientId.toLowerCase().includes(pid));
+  list.sort((a, b) => b.timestamp.localeCompare(a.timestamp));
+
+  const filterWrap = document.getElementById('filter-result-wrap');
+  if (from || to || pid) {
+    const sum = list.reduce((s, c) => s + caseTotal(c), 0);
+    document.getElementById('filter-amount').textContent = fmtCHF(sum);
+    document.getElementById('filter-meta').textContent = `${list.length} ${list.length === 1 ? 'Fall' : 'Fälle'}`;
+    filterWrap.style.display = '';
+  } else {
+    filterWrap.style.display = 'none';
+  }
+
+  const listEl = document.getElementById('case-list');
+  if (list.length === 0) {
+    listEl.innerHTML = '<div class="empty"><span class="em">Keine Fälle</span>Erfasse deinen ersten Fall im Reiter «Neu».</div>';
+    return;
+  }
+
+  const display = list.slice(0, 200);
+  listEl.innerHTML = display.map(c => {
+    const d = new Date(c.timestamp);
+    const ds = d.toLocaleDateString('de-CH', { day: '2-digit', month: '2-digit', year: '2-digit' });
+    const ts = d.toLocaleTimeString('de-CH', { hour: '2-digit', minute: '2-digit' });
+    const ptype = c.priceType || c.multiplierType || 'median';
+    const rabattTag = (c.rabatt && c.rabatt > 0) ? ` · −${fmtNum(c.rabatt)}%` : '';
+    return `
+      <div class="case-row">
+        <div class="left">
+          <div class="pid">${escapeHtml(c.patientId)} · <span class="tn">${escapeHtml(c.tariffNumber)}</span></div>
+          <div class="meta">${ds} · ${ts} · ${insLabel(c.insurance)} · ${ptype === 'max' ? 'Max' : 'Median'}${rabattTag}</div>
+        </div>
+        <div class="amt">${fmtCHF(caseTotal(c))}</div>
+        <button class="del-btn" data-id="${c.id}" aria-label="Löschen">×</button>
+      </div>
+    `;
+  }).join('') + (list.length > display.length
+    ? `<p style="text-align:center; font-size:12px; color:var(--gray-light); margin: 12px 0;">${display.length} von ${list.length} angezeigt</p>`
+    : '');
+
+  listEl.querySelectorAll('.del-btn').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      if (!confirm('Diesen Fall löschen?')) return;
+      cases = cases.filter(x => x.id !== btn.dataset.id);
+      await saveCases();
+      renderUmsatz();
+      toast('Gelöscht');
+    });
+  });
+}
+
+['filter-from', 'filter-to', 'filter-patient'].forEach(id => {
+  document.getElementById(id).addEventListener('input', renderCaseList);
+});
+document.getElementById('clear-filters').addEventListener('click', () => {
+  document.getElementById('filter-from').value = '';
+  document.getElementById('filter-to').value = '';
+  document.getElementById('filter-patient').value = '';
+  renderCaseList();
+});
+
+// ─────────── Settings: tariff list ───────────
+function renderTariffs() {
+  const list = document.getElementById('tariff-list');
+  const countEl = document.getElementById('tariff-count');
+  const q = (document.getElementById('tariff-search').value || '').trim().toLowerCase();
+
+  let visible = [...tariffs];
+  if (q) {
+    visible = visible.filter(t =>
+      t.number.toLowerCase().includes(q) ||
+      (t.description || '').toLowerCase().includes(q)
+    );
+  }
+  visible.sort((a, b) => a.number.localeCompare(b.number, 'de', { numeric: true }));
+
+  countEl.textContent = q
+    ? `${visible.length} von ${tariffs.length} Tarifen`
+    : `${tariffs.length} Tarife gespeichert`;
+
+  if (visible.length === 0) {
+    list.innerHTML = q
+      ? '<div class="empty"><span class="em">Nichts gefunden</span>Versuche einen anderen Suchbegriff.</div>'
+      : '<div class="empty"><span class="em">Keine Tarife</span>SSO-Standard wiederherstellen oder eigenen Tarif hinzufügen.</div>';
+    return;
+  }
+
+  // Cap rendering for performance — show first 100 and a "more" hint if needed
+  const cap = q ? visible.length : Math.min(visible.length, 150);
+  const shown = visible.slice(0, cap);
+  list.innerHTML = shown.map(t => `
+    <div class="tariff-row">
+      <div class="head">
+        <div style="flex:1; min-width:0;">
+          <div class="num">${escapeHtml(t.number)}</div>
+          <div class="desc">${escapeHtml(t.description || '—')}</div>
+        </div>
+        <button class="edit-link" data-edit="${escapeHtml(t.number)}">Bearbeiten</button>
+      </div>
+      <div class="vals">
+        <div class="val-cell"><div class="v-label">Median</div><div class="v-val">${fmtCHF(t.medianPrice)}</div></div>
+        <div class="val-cell"><div class="v-label">Max</div><div class="v-val">${fmtCHF(t.maxPrice)}</div></div>
+      </div>
+    </div>
+  `).join('') + (visible.length > cap
+    ? `<p style="text-align:center; font-size:12px; color:var(--gray-light); margin: 12px 0;">${cap} von ${visible.length} – Suche eingrenzen für mehr</p>`
+    : '');
+
+  list.querySelectorAll('[data-edit]').forEach(btn => {
+    btn.addEventListener('click', () => openTariffModal(btn.dataset.edit));
+  });
+}
+
+document.getElementById('tariff-search').addEventListener('input', renderTariffs);
+
+// ─────────── Tariff edit modal ───────────
+function openTariffModal(num) {
+  editingTariffId = num || null;
+  const t = num ? findTariff(num) : null;
+  document.getElementById('tariff-modal-title').textContent = t ? 'Tarif bearbeiten' : 'Neuer Tarif';
+  document.getElementById('t-number').value = t?.number || '';
+  document.getElementById('t-desc').value = t?.description || '';
+  document.getElementById('t-median').value = t?.medianPrice ?? '';
+  document.getElementById('t-max').value = t?.maxPrice ?? '';
+  document.getElementById('t-delete').style.display = t ? '' : 'none';
+  document.getElementById('modal-tariff').classList.add('active');
+}
+function closeTariffModal() {
+  document.getElementById('modal-tariff').classList.remove('active');
+  editingTariffId = null;
+}
+
+document.getElementById('add-tariff-btn').addEventListener('click', () => openTariffModal(null));
+document.getElementById('t-cancel').addEventListener('click', closeTariffModal);
+document.getElementById('t-save').addEventListener('click', async () => {
+  const num = document.getElementById('t-number').value.trim();
+  const desc = document.getElementById('t-desc').value.trim();
+  const median = parseFloat(String(document.getElementById('t-median').value).replace(',', '.'));
+  const max = parseFloat(String(document.getElementById('t-max').value).replace(',', '.'));
+
+  if (!num || isNaN(median) || isNaN(max)) {
+    toast('Bitte alle Felder ausfüllen');
+    return;
+  }
+  const obj = { number: num, description: desc, medianPrice: median, maxPrice: max };
+  if (editingTariffId) {
+    const idx = tariffs.findIndex(t => t.number === editingTariffId);
+    if (editingTariffId !== num && findTariff(num)) {
+      toast('Tarif-Nummer existiert bereits');
+      return;
+    }
+    if (idx >= 0) tariffs[idx] = obj;
+  } else {
+    if (findTariff(num)) {
+      toast('Tarif-Nummer existiert bereits');
+      return;
+    }
+    tariffs.push(obj);
+  }
+  await saveTariffs();
+  closeTariffModal();
+  renderTariffs();
+  toast('Gespeichert');
+});
+document.getElementById('t-delete').addEventListener('click', async () => {
+  if (!editingTariffId) return;
+  if (!confirm(`Tarif ${editingTariffId} löschen?`)) return;
+  tariffs = tariffs.filter(t => t.number !== editingTariffId);
+  await saveTariffs();
+  closeTariffModal();
+  renderTariffs();
+  toast('Gelöscht');
+});
+
+// ─────────── Reset SSO ───────────
+document.getElementById('reset-sso-btn').addEventListener('click', async () => {
+  if (!confirm('SSO-Standardtarife wiederherstellen? Eigene/bearbeitete Tarife werden überschrieben (Fälle bleiben).')) return;
+  tariffs = SSO_TARIFFS.map(ssoToObj);
+  await saveTariffs();
+  document.getElementById('tariff-search').value = '';
+  renderTariffs();
+  toast(`${tariffs.length} Tarife geladen`);
+});
+
+// ─────────── Excel export ───────────
+function setExportRange(preset) {
+  const now = new Date();
+  const fromEl = document.getElementById('export-from');
+  const toEl = document.getElementById('export-to');
+  const iso = d => d.toISOString().slice(0, 10);
+  if (preset === 'month') {
+    fromEl.value = iso(new Date(now.getFullYear(), now.getMonth(), 1));
+    toEl.value = iso(new Date(now.getFullYear(), now.getMonth() + 1, 0));
+  } else if (preset === 'lastmonth') {
+    fromEl.value = iso(new Date(now.getFullYear(), now.getMonth() - 1, 1));
+    toEl.value = iso(new Date(now.getFullYear(), now.getMonth(), 0));
+  } else if (preset === 'year') {
+    fromEl.value = iso(new Date(now.getFullYear(), 0, 1));
+    toEl.value = iso(new Date(now.getFullYear(), 11, 31));
+  } else if (preset === 'all') {
+    fromEl.value = '';
+    toEl.value = '';
+  }
+}
+document.querySelectorAll('[data-preset]').forEach(b => {
+  b.addEventListener('click', () => setExportRange(b.dataset.preset));
+});
+
+document.getElementById('export-excel-btn').addEventListener('click', () => {
+  if (typeof XLSX === 'undefined') { toast('Excel-Bibliothek lädt noch …'); return; }
+  const from = document.getElementById('export-from').value;
+  const to = document.getElementById('export-to').value;
+
+  let list = [...cases];
+  if (from) list = list.filter(c => c.timestamp >= from);
+  if (to) list = list.filter(c => c.timestamp <= to + 'T23:59:59');
+  list.sort((a, b) => a.timestamp.localeCompare(b.timestamp));
+
+  if (list.length === 0) { toast('Keine Fälle im Zeitraum'); return; }
+
+  const faelleData = list.map(c => {
+    const d = new Date(c.timestamp);
+    const unit = c.unitPrice != null ? c.unitPrice : (c.points || 1) * (c.multiplier || 0);
+    const ptype = c.priceType || c.multiplierType || 'median';
+    return {
+      'Datum': d.toLocaleDateString('de-CH'),
+      'Zeit': d.toLocaleTimeString('de-CH', { hour: '2-digit', minute: '2-digit' }),
+      'Patienten-ID': c.patientId,
+      'Versicherung': insLabel(c.insurance),
+      'Tarif-Nr': c.tariffNumber,
+      'Beschreibung': c.tariffDescription || '',
+      'Typ': ptype === 'max' ? 'Max' : 'Median',
+      'Einheitspreis CHF': Number(unit.toFixed(2)),
+      'Rabatt %': Number(c.rabatt || 0),
+      'Total CHF': Number(caseTotal(c).toFixed(2))
+    };
+  });
+  const ws1 = XLSX.utils.json_to_sheet(faelleData);
+  ws1['!cols'] = [
+    { wch: 11 }, { wch: 7 }, { wch: 14 }, { wch: 14 }, { wch: 10 },
+    { wch: 40 }, { wch: 8 }, { wch: 14 }, { wch: 9 }, { wch: 11 }
+  ];
+  const totalRow = faelleData.length + 2;
+  XLSX.utils.sheet_add_aoa(ws1, [
+    ['', '', '', '', '', '', '', '', 'Summe', { f: `SUM(J2:J${faelleData.length + 1})`, t: 'n' }]
+  ], { origin: `A${totalRow}` });
+
+  const total = list.reduce((s, c) => s + caseTotal(c), 0);
+  const grossSum = list.reduce((s, c) => {
+    const g = c.grossTotal != null ? c.grossTotal : caseTotal(c) / (1 - (c.rabatt || 0) / 100 || 1);
+    return s + (Number.isFinite(g) ? g : caseTotal(c));
+  }, 0);
+  const rabattGiven = grossSum - total;
+
+  const byInsurance = {};
+  for (const c of list) {
+    if (!byInsurance[c.insurance]) byInsurance[c.insurance] = { count: 0, total: 0 };
+    byInsurance[c.insurance].count++;
+    byInsurance[c.insurance].total += caseTotal(c);
+  }
+  const byMonth = {};
+  for (const c of list) {
+    const m = c.timestamp.slice(0, 7);
+    if (!byMonth[m]) byMonth[m] = { count: 0, total: 0 };
+    byMonth[m].count++;
+    byMonth[m].total += caseTotal(c);
+  }
+  const byPatient = {};
+  for (const c of list) {
+    if (!byPatient[c.patientId]) byPatient[c.patientId] = { count: 0, total: 0 };
+    byPatient[c.patientId].count++;
+    byPatient[c.patientId].total += caseTotal(c);
+  }
+  const topPatients = Object.entries(byPatient)
+    .sort((a, b) => b[1].total - a[1].total)
+    .slice(0, 25);
+
+  const summary = [
+    ['Praxis Umsatz – Zusammenfassung'],
+    [],
+    ['Zeitraum von', from || '(Anfang)'],
+    ['Zeitraum bis', to || '(Heute)'],
+    ['Erstellt am', new Date().toLocaleString('de-CH')],
+    [],
+    ['Anzahl Fälle', list.length],
+    ['Brutto Umsatz CHF', Number(grossSum.toFixed(2))],
+    ['Gewährte Rabatte CHF', Number(rabattGiven.toFixed(2))],
+    ['Netto Umsatz CHF', Number(total.toFixed(2))],
+    [],
+    ['Nach Versicherung'],
+    ['Versicherung', 'Fälle', 'Total CHF'],
+    ...Object.entries(byInsurance).map(([k, v]) => [insLabel(k), v.count, Number(v.total.toFixed(2))]),
+    [],
+    ['Nach Monat'],
+    ['Monat', 'Fälle', 'Total CHF'],
+    ...Object.entries(byMonth).sort((a, b) => a[0].localeCompare(b[0]))
+      .map(([k, v]) => [k, v.count, Number(v.total.toFixed(2))]),
+    [],
+    ['Top Patienten (max. 25)'],
+    ['Patienten-ID', 'Fälle', 'Total CHF'],
+    ...topPatients.map(([k, v]) => [k, v.count, Number(v.total.toFixed(2))])
+  ];
+  const ws2 = XLSX.utils.aoa_to_sheet(summary);
+  ws2['!cols'] = [{ wch: 28 }, { wch: 12 }, { wch: 14 }];
+
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws1, 'Fälle');
+  XLSX.utils.book_append_sheet(wb, ws2, 'Zusammenfassung');
+
+  const filename = `umsatz_${from || 'anfang'}_${to || 'heute'}.xlsx`;
+  XLSX.writeFile(wb, filename);
+  toast(`${list.length} Fälle exportiert`);
+});
+
+// ─────────── CSV cases export ───────────
+function downloadCSV(name, header, rows) {
+  const csv = [header.join(';'), ...rows.map(r => r.join(';'))].join('\n');
+  const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = name;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+document.getElementById('export-cases-btn').addEventListener('click', () => {
+  if (cases.length === 0) { toast('Keine Fälle zum Exportieren'); return; }
+  const header = ['patientId','insurance','timestamp','tariffNumber','description','priceType','unitPrice','rabatt','total'];
+  const rows = cases.map(c => {
+    const unit = c.unitPrice != null ? c.unitPrice : (c.points || 1) * (c.multiplier || 0);
+    return [
+      c.patientId, c.insurance, c.timestamp, c.tariffNumber,
+      (c.tariffDescription || '').replace(/;/g, ','),
+      c.priceType || c.multiplierType || 'median',
+      Number(unit).toFixed(2),
+      c.rabatt || 0,
+      caseTotal(c).toFixed(2)
+    ];
+  });
+  downloadCSV(`umsatz-${new Date().toISOString().slice(0,10)}.csv`, header, rows);
+  toast('Export gestartet');
+});
+
+document.getElementById('reset-cases-btn').addEventListener('click', async () => {
+  if (!confirm('Wirklich ALLE Fälle löschen? Tarife bleiben erhalten.')) return;
+  cases = [];
+  await saveCases();
+  renderUmsatz();
+  toast('Alle Fälle gelöscht');
+});
+
+// ─────────── Init ───────────
+async function init() {
+  await loadData();
+  setNowDateTime();
+
+  // First run OR after migration cleanup left tariffs empty: seed with SSO defaults
+  if (tariffs.length === 0) {
+    tariffs = SSO_TARIFFS.map(ssoToObj);
+    await saveTariffs();
+  }
+
+  renderTariffs();
+}
+init();
+</script>
+</body>
+</html>
